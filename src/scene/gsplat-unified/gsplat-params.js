@@ -1,9 +1,17 @@
+import { ShaderMaterial } from '../materials/shader-material.js';
+
 /**
  * Parameters for GSplat unified system.
  *
  * @category Graphics
  */
 class GSplatParams {
+    /**
+     * @type {ShaderMaterial}
+     * @private
+     */
+    _material = new ShaderMaterial();
+
     /**
      * Enables debug rendering of AABBs for GSplat objects. Defaults to false.
      *
@@ -198,6 +206,38 @@ class GSplatParams {
     }
 
     /**
+     * @type {number}
+     * @private
+     */
+    _splatBudget = 0;
+
+    /**
+     * Soft limit on the total number of splats to render. When the optimal LOD selections would
+     * exceed this budget, the system will adjust LOD levels to stay within the limit while
+     * prioritizing quality for closer/more important geometry.
+     *
+     * Set to 0 to disable the budget (default). When disabled, optimal LOD is determined purely
+     * by distance and configured LOD parameters.
+     *
+     * @type {number}
+     */
+    set splatBudget(value) {
+        if (this._splatBudget !== value) {
+            this._splatBudget = value;
+            this.dirty = true;
+        }
+    }
+
+    /**
+     * Gets the splat budget limit.
+     *
+     * @type {number}
+     */
+    get splatBudget() {
+        return this._splatBudget;
+    }
+
+    /**
      * @type {import('../../platform/graphics/texture.js').Texture|null}
      * @private
      */
@@ -294,6 +334,32 @@ class GSplatParams {
      * @type {number}
      */
     cooldownTicks = 100;
+
+    /**
+     * A material template that can be customized by the user. Any defines, parameters, or shader
+     * chunks set on this material will be automatically applied to all GSplat components rendered
+     * in unified mode. After making changes, call {@link Material#update} to for the changes to be applied
+     * on the next frame.
+     *
+     * @type {ShaderMaterial}
+     * @example
+     * // Set a custom parameter on all GSplat materials
+     * app.scene.gsplat.material.setParameter('alphaClip', 0.4);
+     * app.scene.gsplat.material.update();
+     */
+    get material() {
+        return this._material;
+    }
+
+    /**
+     * Called at the end of the frame to clear dirty flags.
+     *
+     * @ignore
+     */
+    frameEnd() {
+        this._material.dirty = false;
+        this.dirty = false;
+    }
 }
 
 export { GSplatParams };
